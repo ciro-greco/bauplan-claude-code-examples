@@ -423,16 +423,16 @@ def test_staging_completeness(data=bauplan.Model('staging')):
 
 > **Note**: The table below shows example expectations from `bauplan.standard_expectations`. For the latest and complete list, consult the official SDK documentation: https://docs.bauplanlabs.com/reference/bauplan_standard_expectations
 
-| Function | Description                         |
-|----------|-------------------------------------|
-| `expect_column_no_nulls` | Column has no null values           |
-| `expect_column_all_null` | Column is entirely null             |
-| `expect_column_some_null` | Column has at least one null        |
-| `expect_column_all_unique` | All values in column are unique     |
-| `expect_column_not_unique` | Column has duplicate values         |
-| `expect_column_accepted_values` | Values are within allowed set       |
-| `expect_column_mean_greater_than` | Mean exceeds threshold              |
-| `expect_column_mean_smaller_than` | Mean below threshold                |
-| `expect_column_mean_greater_or_equal_than` | Mean >= threshold                   |
-| `expect_column_mean_smaller_or_equal_than` | Mean <= threshold                   |
+| Function | Description                           |
+|----------|---------------------------------------|
+| `expect_column_no_nulls` | Column has no null values             |
+| `expect_column_all_null` | Column is entirely null               |
+| `expect_column_some_null` | Column has at least one null          |
+| `expect_column_all_unique` | All values in column are unique       |
+| `expect_column_not_unique` | Column has duplicate values           |
+| `expect_column_accepted_values` | Values are within allowed set         |
+| `expect_column_mean_greater_than` | Mean exceeds threshold                |
+| `expect_column_mean_smaller_than` | Mean below threshold                  |
+| `expect_column_mean_greater_or_equal_than` | Mean >= threshold              |
+| `expect_column_mean_smaller_or_equal_than` | Mean <= threshold              |
 | `expect_column_equal_concatenation` | Column equals concatenation of others |
