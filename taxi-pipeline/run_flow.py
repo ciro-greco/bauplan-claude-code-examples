@@ -5,8 +5,8 @@ run_flow.py
 Demo script that runs a full import + pipeline flow on Bauplan.
 
 Usage:
-    python run_flow.py --no-plan   # clean import, pipeline should succeed
-    python run_flow.py --plan      # poison trip_miles to STRING, pipeline will fail
+    python run_flow.py --no-plan   # import with original schema from S3
+    python run_flow.py --plan      # import with schema override (cast trip_miles to STRING)
 """
 
 import argparse
@@ -18,19 +18,19 @@ S3_URI = "s3://alpha-hello-bauplan/taxi_fhvhv_2021/*.parquet"
 TABLE_NAME = "taxi_trips_2021"
 NAMESPACE = "bauplan"
 TIMESTAMP = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-BRANCH_NAME = f"ciro.upstream_schema_drift_{TIMESTAMP}"
+BRANCH_NAME = f"ciro.import_{TIMESTAMP}"
 TARGET_COLUMN = "trip_miles"
-TARGET_TYPE = "string"  # was: double
+TARGET_TYPE = "string"
 
 
 def main():
     parser = argparse.ArgumentParser(description="Run Bauplan import + pipeline flow.")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--plan", action="store_true", help="Poison trip_miles to STRING (pipeline will fail)")
-    group.add_argument("--no-plan", action="store_true", help="Clean import with original schema (pipeline should succeed)")
+    group.add_argument("--plan", action="store_true", help="Override trip_miles type to STRING before import")
+    group.add_argument("--no-plan", action="store_true", help="Import with original schema from S3")
     args = parser.parse_args()
 
-    poison = args.plan
+    override_schema = args.plan
 
     client = bauplan.Client()
 
@@ -50,9 +50,9 @@ def main():
     )
     print(f"   Plan created for {NAMESPACE}.{TABLE_NAME}")
 
-    # ── 3. Optionally poison the plan ─────────────────────────────
-    if poison:
-        print("\n═══ Step 3: Modify plan — casting trip_miles to STRING ═══")
+    # ── 3. Optionally override schema ─────────────────────────────
+    if override_schema:
+        print("\n═══ Step 3: Override schema — casting trip_miles to STRING ═══")
         for col in plan_state.plan["schema_info"]["detected_schemas"]:
             if col["column_name"] == TARGET_COLUMN:
                 original = col["dst_datatype"]
@@ -105,7 +105,7 @@ def main():
     print(f"   Import on {BRANCH_NAME} completed.")
 
     # ── 7. Run Transformation Pipeline ───────────────────────────────
-    print(f"\n═══ Step 7: Running Transformation pipeline on {BRANCH_NAME}...")
+    print(f"\n═══ Step 7: Running transformation pipeline on {BRANCH_NAME}...")
 
     run_state = client.run(project_dir='pipeline', ref=BRANCH_NAME)
     print(f"   Pipeline run finished (job_id: {run_state.job_id})")
@@ -117,7 +117,7 @@ def main():
             print(f"   Error: {run_state.error}")
         return
 
-    print(f"\nDone. So long and thanks for all the fish. Check {BRANCH_NAME} before merging.")
+    print(f"\nDone. Check {BRANCH_NAME} before merging.")
     print("\n" + "=" * 60)
 
 

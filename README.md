@@ -1,7 +1,19 @@
-## Data to import 
+## Fix pipeline and add data quality
 
-### Prompts
-```markdown
+```text
+I want you to check a job that did not run correctly and self-heal it.
+I want to know what went wrong, how to fix it and how to prevent it from failing again for similar reasons
+```
+
+
+## Data to import 
+```text
+s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.csv
+```
+
+### Import
+
+```text
 Hey, I have some data in my s3 bucket. I want to import the data in the lakehouse as an iceberg table, so I can run queries and pipelines in it.
 the data is here: s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.csv
 the table name is: instagram_engagement_data
@@ -9,7 +21,10 @@ After the data is successfully imported, Keep branch open for inspection (do not
 if the import fail, keep branch for debugging. 
 ```
 
-```Let's now build a pipeline for the marketing team who needs to understand the engagment meterics for social media.
+### Data pipeline
+
+```text
+Let's now build a pipeline for the marketing team who needs to understand the engagment meterics for social media.
 
 Let's say that we want to build a pipeline that calculates different user segments by engagement level. 
  

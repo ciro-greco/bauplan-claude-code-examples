@@ -4,10 +4,6 @@ NYC Taxi Analytics Pipeline
 
 Joins taxi trips with zone metadata, then computes pickup location
 statistics including average trip distance.
-
-This pipeline WILL FAIL if trip_miles has been changed to VARCHAR
-upstream. The DuckDB join in model 1 passes the string through
-silently. The pandas .mean() in model 2 raises a TypeError.
 """
 
 import bauplan
