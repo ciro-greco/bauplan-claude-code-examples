@@ -35,7 +35,9 @@ def ny_taxi_trips_and_zones(
     import duckdb
 
     joined_table = duckdb.sql("""
-        SELECT *
+        SELECT
+            trips.* REPLACE (CAST(trip_miles AS DOUBLE) AS trip_miles),
+            zones.* EXCLUDE (LocationID)
         FROM trips
         JOIN zones ON trips.PULocationID = zones.LocationID
     """).arrow()
