@@ -23,6 +23,7 @@ def ny_taxi_trips_and_zones(
             'DOLocationID',
             'trip_miles',
         ],
+        filter="pickup_datetime >= '2021-02-01' AND pickup_datetime < '2021-02-15'",
     ),
 ):
     """
