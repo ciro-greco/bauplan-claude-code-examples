@@ -36,7 +36,10 @@ def ny_taxi_trips_and_zones(
     import duckdb
 
     joined_table = duckdb.sql("""
-        SELECT *
+        SELECT
+            trips.* EXCLUDE (trip_miles),
+            CAST(trips.trip_miles AS DOUBLE) AS trip_miles,
+            zones.*  EXCLUDE (LocationID)
         FROM trips
         JOIN zones ON trips.PULocationID = zones.LocationID
     """).arrow()
@@ -46,6 +49,20 @@ def ny_taxi_trips_and_zones(
     print(f'\n size in GB {size_in_gb} \n')
 
     return joined_table
+
+@bauplan.expectation()
+@bauplan.python('3.10', pip={'pyarrow': '17.0.0'})
+def check_trip_miles_is_numeric(
+    data=bauplan.Model(
+        'ny_taxi_trips_and_zones',
+        columns=['trip_miles'],
+    ),
+):
+    """Verify trip_miles is a floating-point type, not string."""
+    import pyarrow as pa
+
+    return pa.types.is_floating(data.schema.field('trip_miles').type)
+
 
 @bauplan.model(materialization_strategy='REPLACE')
 @bauplan.python('3.11', pip={'pandas': '2.2.0'})

@@ -14,7 +14,7 @@ s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.cs
 ### Import
 
 ```text
-Hey, I have some data in my s3 bucket. I want to import the data in the lakehouse as an iceberg table, so I can run queries and pipelines in it.
+I want to import data from s3 in the lakehouse as an iceberg table, so I can run queries and pipelines in it.
 the data is here: s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.csv
 the table name is: instagram_engagement_data
 After the data is successfully imported, Keep branch open for inspection (do not merge into main)
