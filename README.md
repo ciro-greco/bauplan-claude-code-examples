@@ -1,10 +1,41 @@
+# Prompt for demos
+
+## end-to-end example
+```text
+Import data from s3 in the lakehouse from: 
+
+s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.csv
+
+The table name is: instagram_engagement_data
+Do not merge into main: 
+- if the import is succesful, keep branch open for inspection.
+- If the import fail, keep branch for debugging. 
+
+Then build a pipeline that calculates different user segments by engagement level for the marketing team
+```
+
+## ecommerce session pipeline
+```text
+import new data into the lakehouse from this folder:
+
+s3://alpha-hello-bauplan/ecommerce-open-cdp/ecommerce_sessions_week.parquet                  
+
+Import the new table in a namespace called ecommerce. 
+The new table should be called ecommerce_sessions_oct_2019
+
+Then build data pipeline to calculate customer segments and session conversion rate to power a dashboard.
+Use the new data imported and `bauplan.ecommerce_users` — users dimension with `user_id` and `customer_segment`.
+
+Finally, build a Streamlit dashboard to visualize the main kpis and a chart bar with the customer segments and their conversion rate.
+Use the skill building-streamlit-dashboards.
+```
+
 ## Fix pipeline and add data quality
 
 ```text
 I want you to check a job that did not run correctly and self-heal it.
 I want to know what went wrong, how to fix it and how to prevent it from failing again for similar reasons
 ```
-
 
 ## Data to import 
 ```text
