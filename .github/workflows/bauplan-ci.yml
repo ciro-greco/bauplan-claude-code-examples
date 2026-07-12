@@ -37,7 +37,12 @@ jobs:
       - name: Configure bauplan credentials
         env:
           BAUPLAN_API_KEY: ${{ secrets.BAUPLAN_API_KEY }}
-        run: bauplan config set api_key "$BAUPLAN_API_KEY"
+        run: |
+          if [ -z "$BAUPLAN_API_KEY" ]; then
+            echo "::error::BAUPLAN_API_KEY secret is not set. Add it in Settings → Secrets and variables → Actions (see conversion-pipeline/README.md)."
+            exit 1
+          fi
+          bauplan config set api_key "$BAUPLAN_API_KEY"
 
       - name: Resolve data branch
         id: br
