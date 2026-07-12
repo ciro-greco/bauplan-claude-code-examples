@@ -1,0 +1,69 @@
+name: Bauplan publish on merge
+
+# The "publish" half of write-audit-publish. When a PR that touches the pipeline is
+# MERGED into `main`, this promotes the reviewed data branch by running
+# `bauplan branch merge` into `main`. Approval is enforced upstream by branch protection
+# (require 1 review before merge), so a human approval is what authorizes the data merge.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - 'conversion-pipeline/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  publish:
+    # Only on a real merge — closing a PR without merging must NOT publish.
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install bauplan
+        run: pip install --quiet --upgrade bauplan
+
+      - name: Configure bauplan credentials
+        env:
+          BAUPLAN_API_KEY: ${{ secrets.BAUPLAN_API_KEY }}
+        run: bauplan config set api_key "$BAUPLAN_API_KEY"
+
+      - name: Resolve data branch
+        id: br
+        run: echo "branch=$(tr -d '[:space:]' < conversion-pipeline/.bauplan-branch)" >> "$GITHUB_OUTPUT"
+
+      - name: Audit diff before publish
+        run: |
+          bauplan checkout "${{ steps.br.outputs.branch }}"
+          echo "Publishing data branch '${{ steps.br.outputs.branch }}' -> main:"
+          bauplan branch diff main
+
+      - name: Merge data branch into main
+        run: |
+          bauplan checkout main
+          bauplan branch merge "${{ steps.br.outputs.branch }}" \
+            --commit-message "Publish via PR #${{ github.event.pull_request.number }}"
+
+      - name: Comment result on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `✅ Published data branch \`${{ steps.br.outputs.branch }}\` to \`main\` in Bauplan.`,
+            });
+
+      - name: Clean up data branch
+        run: bauplan branch rm "${{ steps.br.outputs.branch }}" || true
