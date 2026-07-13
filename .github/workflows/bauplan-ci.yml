@@ -70,24 +70,16 @@ jobs:
         working-directory: ${{ steps.m.outputs.PROJECT_DIR }}
         run: bauplan run --strict on
 
-      - name: Build PR comment (data summary + diff)
+      - name: Build PR comment (principled summary from Bauplan introspection)
         if: steps.m.outputs.present == 'true'
         env:
           BAUPLAN_BRANCH: ${{ steps.m.outputs.BAUPLAN_BRANCH }}
           RESULT_TABLE: ${{ steps.m.outputs.RESULT_TABLE }}
+          DASHBOARD_URL: ${{ steps.m.outputs.DASHBOARD_URL }}
         run: |
           {
             echo "<!-- bauplan-data-summary -->"
-            python scripts/summarize_pipeline.py
-            echo ""
-            echo "<details><summary>Diff vs <code>main</code> (what merging publishes)</summary>"
-            echo ""
-            echo '```'
-            bauplan branch diff main 2>&1 || true
-            echo '```'
-            echo "</details>"
-            echo ""
-            echo "_Quality gate passed ✅ · merging this PR publishes the tables above to \`main\`._"
+            python scripts/pr_summary.py
           } > "$RUNNER_TEMP/comment.md"
 
       - name: Upsert PR comment

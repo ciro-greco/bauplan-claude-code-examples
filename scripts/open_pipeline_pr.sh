@@ -61,21 +61,19 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 git -C "$WT" push --quiet -u origin "$GIT_BRANCH"
 
-# Build the PR body (data summary is best-effort from local creds; CI posts a fresh one too).
+# Build the PR body from the principled summary (CI re-posts a fresh copy as a comment).
 BODY_FILE="$(mktemp)"
 {
   echo "## Auto-generated pipeline for review"
   echo
   echo "Built by \`/marketing-agent\` on Bauplan branch \`$BAUPLAN_BRANCH\` — **nothing is on Bauplan \`main\` yet.**"
   echo
-  if ! "$PY" "$REPO_ROOT/scripts/summarize_pipeline.py" "$BAUPLAN_BRANCH" "$RESULT_TABLE" 2>/dev/null; then
-    echo "_(data summary will be posted by CI once checks run)_"
+  if ! "$PY" "$REPO_ROOT/scripts/pr_summary.py" "$BAUPLAN_BRANCH" "$RESULT_TABLE" "$DASHBOARD_URL" 2>/dev/null; then
+    echo "_(full summary will be posted by CI once checks run)_"
   fi
   echo
-  echo "📊 Dashboard preview: [$DASHBOARD_URL]($DASHBOARD_URL)"
-  echo
   echo "### How to publish"
-  echo "Review the numbers and the green check, then **Approve & Merge**. Merging runs \`bauplan branch merge\` to publish the tables to \`main\`."
+  echo "Review the publish impact + the green check, then **Approve & Merge**. Merging runs \`bauplan branch merge\` to publish the tables above to \`main\`."
   echo
   echo "🤖 Auto-opened by /marketing-agent"
 } > "$BODY_FILE"
