@@ -154,6 +154,23 @@ def md_rows(rows):
     return "\n".join(lines)
 
 
+def mermaid_dag(names, model_edges, output_models):
+    """Mermaid flowchart of the model DAG — GitHub renders ```mermaid blocks in PRs/comments."""
+    def nid(name):
+        return re.sub(r"\W", "_", name)
+
+    lines = ["```mermaid", "flowchart LR"]
+    for name in names.values():
+        cls = ":::output" if name in output_models else ""
+        lines.append(f'    {nid(name)}["{name}"]{cls}')
+    for s, d in model_edges:
+        lines.append(f"    {nid(names[s])} --> {nid(names[d])}")
+    if any(n in output_models for n in names.values()):
+        lines.append("    classDef output fill:#dcfce7,stroke:#16a34a,color:#14532d;")
+    lines.append("```")
+    return "\n".join(lines)
+
+
 # --------------------------------------------------------------------------- render
 def main():
     branch = os.environ.get("BAUPLAN_BRANCH") or (sys.argv[1] if len(sys.argv) > 1 else None)
@@ -198,22 +215,23 @@ def main():
     if job and ctx:
         status = getattr(job, "human_readable_status", None) or getattr(job, "status", "?")
         print(f"- **Run** `{job.id}` — {status} in {_duration(job)} on `{branch}`")
-        edges = getattr(ctx, "dag_edges", []) or []
-        names = {n.id: n.name for n in getattr(ctx, "dag_nodes", [])}
-        # keep only real model->model edges (root edges have source_model=None)
-        model_edges = [(e.source_model, e.destination_model) for e in edges
-                       if e.source_model in names and e.destination_model in names]
-        if model_edges:
-            chain = "  \n".join(f"  `{names[s]}` → `{names[d]}`" for s, d in model_edges)
-            print(f"- **DAG** ({len(names)} models):  \n{chain}")
-        elif names:
-            print(f"- **Models:** {', '.join(f'`{n}`' for n in names.values())}")
-        outs = [f"`{fqn}`" for k, _, fqn in changes if role(k, fqn) == "pipeline output"]
         srcs = [f"`{fqn}`" for k, _, fqn in changes if role(k, fqn) == "imported source"]
+        outs = [f"`{fqn}`" for k, _, fqn in changes if role(k, fqn) == "pipeline output"]
         if srcs:
             print(f"- **Lineage — imported sources:** {', '.join(srcs)}")
         if outs:
             print(f"- **Lineage — materialized outputs:** {', '.join(outs)}")
+        names = {n.id: n.name for n in getattr(ctx, "dag_nodes", [])}
+        edges = getattr(ctx, "dag_edges", []) or []
+        # keep only real model->model edges (root edges have source_model=None)
+        model_edges = [(e.source_model, e.destination_model) for e in edges
+                       if e.source_model in names and e.destination_model in names]
+        output_models = {fqn.split(".")[-1] for k, _, fqn in changes if role(k, fqn) == "pipeline output"}
+        if names:
+            print()
+            print(f"**DAG** ({len(names)} models · green = materialized output)")
+            print()
+            print(mermaid_dag(names, model_edges, output_models))
     else:
         print("_Run job not found via introspection; see the pipeline code in this PR's diff._")
 
