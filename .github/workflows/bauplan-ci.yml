@@ -64,7 +64,7 @@ jobs:
             echo "<details><summary>Diff vs <code>main</code> (what merging publishes)</summary>"
             echo ""
             echo '```'
-            bauplan branch diff main
+            bauplan branch diff main 2>&1 || true
             echo '```'
             echo "</details>"
             echo ""
