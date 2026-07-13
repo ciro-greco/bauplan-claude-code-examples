@@ -68,7 +68,7 @@ BODY_FILE="$(mktemp)"
   echo
   echo "Built by \`/marketing-agent\` on Bauplan branch \`$BAUPLAN_BRANCH\` — **nothing is on Bauplan \`main\` yet.**"
   echo
-  if ! "$PY" "$REPO_ROOT/scripts/pr_summary.py" "$BAUPLAN_BRANCH" "$RESULT_TABLE" "$DASHBOARD_URL" 2>/dev/null; then
+  if ! "$PY" "$REPO_ROOT/.claude/skills/bauplan-pr-summary/pr_summary.py" "$BAUPLAN_BRANCH" "$RESULT_TABLE" "$DASHBOARD_URL" 2>/dev/null; then
     echo "_(full summary will be posted by CI once checks run)_"
   fi
   echo

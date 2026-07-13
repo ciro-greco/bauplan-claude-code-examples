@@ -79,7 +79,7 @@ jobs:
         run: |
           {
             echo "<!-- bauplan-data-summary -->"
-            python scripts/pr_summary.py
+            python .claude/skills/bauplan-pr-summary/pr_summary.py
           } > "$RUNNER_TEMP/comment.md"
 
       - name: Upsert PR comment

@@ -97,11 +97,16 @@ found, still print publish impact + provenance + result, and note the code is in
 
 ## Reference implementation
 
-A working, maintained implementation lives at **`scripts/pr_summary.py`**. When adapting
-it for a new pipeline, keep the section order (publish impact FIRST) and the principle
-above. Validate against a real branch: build a pipeline on a branch, run it, then
-`python scripts/pr_summary.py <branch> <result_table>` and confirm every published table
-appears with a row count.
+A working, maintained implementation lives **next to this file**, at
+`pr_summary.py` in this skill folder (`.claude/skills/bauplan-pr-summary/pr_summary.py`) —
+the skill is a self-contained package, so the instructions and the reference
+implementation travel together. Its callers invoke it by that path: the CI workflow
+(`.github/workflows/bauplan-ci.yml`) and the PR helper (`scripts/open_pipeline_pr.sh`).
+
+When adapting it, keep the section order (publish impact FIRST) and the principle above.
+Validate against a real branch: build a pipeline on a branch, run it, then
+`python .claude/skills/bauplan-pr-summary/pr_summary.py <branch> <result_table>` and
+confirm every published table appears with a row count.
 
 ## Keep the skill and the script in sync
 
@@ -109,4 +114,5 @@ This skill is the source of truth, not the script. **Any improvement to `pr_summ
 (a new section, a new rendering like the Mermaid DAG, a new API used) MUST be reflected
 here** — update the API→section table and the relevant section — otherwise the next run
 regenerates the old version and the improvement is lost. Treat "edit the script" and
-"edit this skill" as one change, never two.
+"edit this skill" as one change, never two. They live in the same folder for exactly this
+reason.
