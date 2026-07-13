@@ -1,0 +1,121 @@
+name: Bauplan PR checks
+
+# Runs the pipeline + data-quality expectations on the Bauplan data branch declared in
+# the repo-root manifest (.bauplan/pr.env), then posts (or updates) a PR comment with the
+# data produced and the diff vs `main`. Generic: works for any pipeline the manifest points
+# at. A failing quality gate turns this check red.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.bauplan/**'
+      - 'conversion-pipeline/**'
+      - '.github/workflows/bauplan-ci.yml'
+
+concurrency:
+  group: bauplan-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-and-summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load pipeline manifest
+        id: m
+        run: |
+          if [ ! -f .bauplan/pr.env ]; then
+            echo "No .bauplan/pr.env in this PR — nothing to validate."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "present=true" >> "$GITHUB_OUTPUT"
+          while IFS='=' read -r k v; do
+            case "$k" in ''|\#*) continue;; esac
+            echo "$k=$v" >> "$GITHUB_OUTPUT"
+          done < .bauplan/pr.env
+
+      - uses: actions/setup-python@v5
+        if: steps.m.outputs.present == 'true'
+        with:
+          python-version: '3.11'
+
+      - name: Install bauplan
+        if: steps.m.outputs.present == 'true'
+        run: pip install --quiet --upgrade bauplan
+
+      - name: Configure bauplan credentials
+        if: steps.m.outputs.present == 'true'
+        env:
+          BAUPLAN_API_KEY: ${{ secrets.BAUPLAN_API_KEY }}
+        run: |
+          if [ -z "$BAUPLAN_API_KEY" ]; then
+            echo "::error::BAUPLAN_API_KEY secret is not set (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          bauplan config set api_key "$BAUPLAN_API_KEY"
+
+      - name: Point CLI at the data branch
+        if: steps.m.outputs.present == 'true'
+        run: bauplan checkout "${{ steps.m.outputs.BAUPLAN_BRANCH }}"
+
+      - name: Run pipeline + quality gates (strict)
+        if: steps.m.outputs.present == 'true'
+        working-directory: ${{ steps.m.outputs.PROJECT_DIR }}
+        run: bauplan run --strict on
+
+      - name: Build PR comment (data summary + diff)
+        if: steps.m.outputs.present == 'true'
+        env:
+          BAUPLAN_BRANCH: ${{ steps.m.outputs.BAUPLAN_BRANCH }}
+          RESULT_TABLE: ${{ steps.m.outputs.RESULT_TABLE }}
+        run: |
+          {
+            echo "<!-- bauplan-data-summary -->"
+            python scripts/summarize_pipeline.py
+            echo ""
+            echo "<details><summary>Diff vs <code>main</code> (what merging publishes)</summary>"
+            echo ""
+            echo '```'
+            bauplan branch diff main 2>&1 || true
+            echo '```'
+            echo "</details>"
+            echo ""
+            echo "_Quality gate passed ✅ · merging this PR publishes the tables above to \`main\`._"
+          } > "$RUNNER_TEMP/comment.md"
+
+      - name: Upsert PR comment
+        if: steps.m.outputs.present == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync(process.env.RUNNER_TEMP + '/comment.md', 'utf8');
+            const marker = '<!-- bauplan-data-summary -->';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
