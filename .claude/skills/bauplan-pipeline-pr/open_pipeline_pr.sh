@@ -11,7 +11,7 @@
 # It does NOT merge. Merging the PR is what publishes the data (via bauplan-publish.yml).
 #
 # Usage:
-#   scripts/open_pipeline_pr.sh <project_dir> <bauplan_branch> [result_table] [dashboard_url]
+#   .claude/skills/bauplan-pipeline-pr/open_pipeline_pr.sh <project_dir> <bauplan_branch> [result_table] [dashboard_url]
 set -euo pipefail
 
 PROJECT_DIR="${1:?project dir required (e.g. conversion-pipeline)}"

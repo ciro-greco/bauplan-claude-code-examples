@@ -91,7 +91,7 @@ and `.size` (bytes) — never run `COUNT(*)` for this.
 
 `pr_summary.py <branch> [result_table] [dashboard_url]` (also honors env `BAUPLAN_BRANCH`,
 `RESULT_TABLE`, `DASHBOARD_URL`, `RUN_JOB_ID`). It prints Markdown to stdout — used both
-for the PR **body** (by `scripts/open_pipeline_pr.sh`) and the CI **comment** (by
+for the PR **body** (by `.claude/skills/bauplan-pipeline-pr/open_pipeline_pr.sh`) and the CI **comment** (by
 `.github/workflows/bauplan-ci.yml`). It must degrade gracefully: if the run job can't be
 found, still print publish impact + provenance + result, and note the code is in the diff.
 
@@ -101,7 +101,7 @@ A working, maintained implementation lives **next to this file**, at
 `pr_summary.py` in this skill folder (`.claude/skills/bauplan-pr-summary/pr_summary.py`) —
 the skill is a self-contained package, so the instructions and the reference
 implementation travel together. Its callers invoke it by that path: the CI workflow
-(`.github/workflows/bauplan-ci.yml`) and the PR helper (`scripts/open_pipeline_pr.sh`).
+(`.github/workflows/bauplan-ci.yml`) and the PR helper (`.claude/skills/bauplan-pipeline-pr/open_pipeline_pr.sh`).
 
 When adapting it, keep the section order (publish impact FIRST) and the principle above.
 Validate against a real branch: build a pipeline on a branch, run it, then
