@@ -1,75 +1,65 @@
 # Prompt for demos
 
-## end-to-end example
+## Instagram data end-to-end example
 ```text
 Import data from s3 in the lakehouse from: 
 
 s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.csv
 
-The table name is: instagram_engagement_data
-Do not merge into main: 
+- The table name is: instagram_engagement_data
+- Do not merge into main: 
 - if the import is succesful, keep branch open for inspection.
-- If the import fail, keep branch for debugging. 
+- if the import fail, keep branch for debugging. 
 
-Then build a pipeline that calculates different user segments by engagement level for the marketing team
+Then build a pipeline that calculates different user segments by engagement level for the marketing team. 
+- Be simple, max two nodes. 
+- Use only Python, run the full pipeline in a branch. 
+- Keep the branch open, do not merge.
+
+Finally, build a Streamlit dashboard to visualize the main kpis and user segments. Use the skill building-streamlit-dashboards.
 ```
 
-## ecommerce session pipeline
+## Instagram data pipeline only
+```text
+Build a pipeline that calculates different user segments by engagement level for the marketing team from the table instagram_engagement_data
+Be simple, max two nodes. Use only Python, run the full pipeline in a branch. Keep the branch open, do not merge.
+```
+
+## Ecommerce sessions end-to-end example
 ```text
 import new data into the lakehouse from this folder:
 
 s3://alpha-hello-bauplan/ecommerce-open-cdp/ecommerce_sessions_week.parquet                  
 
 Import the new table in a namespace called ecommerce. 
-The new table should be called ecommerce_sessions_oct_2019
+The table name is: ecommerce.ecommerce_sessions_oct_2019
+Do not merge into main: 
+- if the import is succesful, keep branch open for inspection.
+- If the import fail, keep branch for debugging. 
 
 Then build data pipeline to calculate customer segments and session conversion rate to power a dashboard.
 Use the new data imported and `bauplan.ecommerce_users` — users dimension with `user_id` and `customer_segment`.
+Be simple, max two nodes. Use only Python, run the full pipeline in a branch. Keep the branch open, do not merge.
 
 Finally, build a Streamlit dashboard to visualize the main kpis and a chart bar with the customer segments and their conversion rate.
-Use the skill building-streamlit-dashboards.
+Use the skill building-streamlit-dashboards. 
 ```
 
 ## Fix pipeline and add data quality
 
 ```text
-I want you to check a job that did not run correctly and self-heal it.
-I want to know what went wrong, how to fix it and how to prevent it from failing again for similar reasons
+I want you to check a job that did not run correctly and fix it it.
+I want to know what went wrong, how to fix it and how to prevent it from failing again for similar reasons.
 ```
 
-## Data to import 
-```text
-s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.csv
-```
-
-### Import
-
-```text
-I want to import data from s3 in the lakehouse as an iceberg table, so I can run queries and pipelines in it.
-the data is here: s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.csv
-the table name is: instagram_engagement_data
-After the data is successfully imported, Keep branch open for inspection (do not merge into main)
-if the import fail, keep branch for debugging. 
-```
-
-### Data pipeline
-
-```text
-Let's now build a pipeline for the marketing team who needs to understand the engagment meterics for social media.
-
-Let's say that we want to build a pipeline that calculates different user segments by engagement level. 
- 
-Do the entire pipeline as Python and use Polars because it is better for performance.                                ```
-```
-
-### Social media user analysis -> social_media_user_data
-S3 Uri: 
+## Social media user analysis
+### Source dats S3 Uri: 
 ```
 s3://alpha-hello-bauplan/social-media-user-analysis/instagram_usage_lifestyle.csv  
 ```
 Link to the original dataset: https://www.kaggle.com/datasets/rockyt07/social-media-user-analysis
 
-#### About the Dataset
+### About the Dataset
 Social Media User Behavior & Lifestyle – 1 Million Synthetic Users (Instagram 2025–2026 based)
 This dataset contains 1,000,000+ fully synthetic user profiles that realistically simulate Instagram usage patterns combined with detailed demographic, lifestyle, health, and behavioral attributes.
 
