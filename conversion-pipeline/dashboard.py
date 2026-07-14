@@ -23,6 +23,11 @@ def load_data(branch: str) -> pd.DataFrame:
     client = bauplan.Client()
     tbl = client.query(f"SELECT * FROM {TABLE}", ref=branch)
     df = tbl.to_pandas()
+    # conversion_rate arrives as decimal.Decimal and the counts may be arrow ints;
+    # coerce to plain float/int so arithmetic with Python floats works.
+    df["conversion_rate"] = df["conversion_rate"].astype(float)
+    df["total_sessions"] = df["total_sessions"].astype("int64")
+    df["converted_sessions"] = df["converted_sessions"].astype("int64")
     df["customer_segment"] = pd.Categorical(
         df["customer_segment"], categories=SEGMENT_ORDER, ordered=True
     )
