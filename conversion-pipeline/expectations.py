@@ -1,97 +1,105 @@
 """
-Data quality expectations for the conversion pipeline.
+Data quality gate for the session -> purchase conversion pipeline.
 
-These gate the final `conversion_by_segment` table — the numbers the marketing
-team acts on. All are FAIL-severity (assert): if any breaks, the segment
-conversion rates are unsafe to publish.
+Every check runs against the final output table `segment_conversion` as a DAG
+node during `bauplan run`, right after the model materializes. All are FAIL
+severity (assert): if any trips, the numbers are not safe to steer Q4 ad spend
+with, so the run halts before the table can be published.
 """
 
 import bauplan
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
-def test_segment_no_nulls(
-    data=bauplan.Model("conversion_by_segment", columns=["customer_segment"]),
-):
-    """customer_segment must never be null — it is the reporting key."""
-    from bauplan.standard_expectations import expect_column_no_nulls
-
-    result = expect_column_no_nulls(data, "customer_segment")
-    assert result, "customer_segment contains null values"
-    return result
-
-
-@bauplan.expectation()
-@bauplan.python("3.11")
+@bauplan.python('3.11')
 def test_segment_accepted_values(
-    data=bauplan.Model("conversion_by_segment", columns=["customer_segment"]),
+    data=bauplan.Model('segment_conversion', columns=['customer_segment']),
 ):
-    """customer_segment must be exactly one of high / medium / low."""
+    """customer_segment must be exactly one of high / medium / low.
+
+    The whole report is sliced by segment; an unexpected label means the join
+    to ecommerce_users leaked bad data and the breakdown is untrustworthy.
+    """
     from bauplan.standard_expectations import expect_column_accepted_values
 
     result = expect_column_accepted_values(
-        data, "customer_segment", ["high", "medium", "low"]
+        data, 'customer_segment', ['high', 'medium', 'low']
     )
-    assert result, "customer_segment contains values outside {high, medium, low}"
+    assert result, 'customer_segment has values outside {high, medium, low}'
     return result
 
 
 @bauplan.expectation()
-@bauplan.python("3.11")
-def test_conversion_rate_no_nulls(
-    data=bauplan.Model("conversion_by_segment", columns=["conversion_rate"]),
+@bauplan.python('3.11')
+def test_segment_no_nulls(
+    data=bauplan.Model('segment_conversion', columns=['customer_segment']),
 ):
-    """conversion_rate must never be null — it is the headline metric."""
+    """customer_segment must have no nulls — every row must belong to a segment."""
     from bauplan.standard_expectations import expect_column_no_nulls
 
-    result = expect_column_no_nulls(data, "conversion_rate")
-    assert result, "conversion_rate contains null values"
+    result = expect_column_no_nulls(data, 'customer_segment')
+    assert result, 'customer_segment contains nulls'
     return result
 
 
 @bauplan.expectation()
-@bauplan.python("3.11", pip={"polars": "1.15.0"})
-def test_conversion_rate_in_unit_interval(
-    data=bauplan.Model("conversion_by_segment", columns=["conversion_rate"]),
+@bauplan.python('3.11')
+def test_conversion_rate_bounds(
+    data=bauplan.Model('segment_conversion', columns=['conversion_rate']),
 ):
-    """conversion_rate must lie in [0, 1] — it is a ratio, anything else is a bug."""
-    import polars as pl
+    """conversion_rate must be non-null and within [0, 1].
 
-    df = pl.from_arrow(data)
-    violations = df.filter(
-        (pl.col("conversion_rate") < 0) | (pl.col("conversion_rate") > 1)
-    )
-    is_valid = violations.height == 0
-    assert is_valid, f"{violations.height} rows have conversion_rate outside [0, 1]"
-    return is_valid
+    It is conversions / sessions — a value outside [0, 1] is arithmetically
+    impossible and would produce a misleading headline percentage.
+    """
+    import pyarrow.compute as pc
+
+    col = data.column('conversion_rate')
+    assert col.null_count == 0, 'conversion_rate contains nulls'
+    lo = pc.min(col).as_py()
+    hi = pc.max(col).as_py()
+    ok = lo >= 0.0 and hi <= 1.0
+    assert ok, f'conversion_rate outside [0, 1]: min={lo}, max={hi}'
+    return ok
 
 
 @bauplan.expectation()
-@bauplan.python("3.11", pip={"polars": "1.15.0"})
+@bauplan.python('3.11')
 def test_counts_non_negative(
     data=bauplan.Model(
-        "conversion_by_segment",
-        columns=["total_sessions", "converting_sessions"],
+        'segment_conversion', columns=['sessions', 'conversions']
     ),
 ):
-    """Session counts must be present and non-negative, and conversions <= totals."""
-    import polars as pl
+    """sessions and conversions must be non-null and non-negative counts."""
+    import pyarrow.compute as pc
 
-    df = pl.from_arrow(data)
-    null_count = (
-        df.select(
-            pl.col("total_sessions").is_null().sum()
-            + pl.col("converting_sessions").is_null().sum()
-        ).item()
-    )
-    assert null_count == 0, "session count columns contain nulls"
+    for name in ('sessions', 'conversions'):
+        col = data.column(name)
+        assert col.null_count == 0, f'{name} contains nulls'
+        assert pc.min(col).as_py() >= 0, f'{name} has negative values'
+    return True
 
-    violations = df.filter(
-        (pl.col("total_sessions") < 0)
-        | (pl.col("converting_sessions") < 0)
-        | (pl.col("converting_sessions") > pl.col("total_sessions"))
-    )
-    is_valid = violations.height == 0
-    assert is_valid, f"{violations.height} rows have invalid session counts"
-    return is_valid
+
+@bauplan.expectation()
+@bauplan.python('3.11')
+def test_conversions_not_exceeding_sessions(
+    data=bauplan.Model(
+        'segment_conversion', columns=['sessions', 'conversions']
+    ),
+):
+    """conversions must never exceed sessions.
+
+    A session converts at most once, so conversions <= sessions per segment.
+    A violation means the session-dedup logic broke.
+    """
+    import pyarrow.compute as pc
+
+    violations = pc.sum(
+        pc.cast(
+            pc.greater(data.column('conversions'), data.column('sessions')),
+            'int64',
+        )
+    ).as_py()
+    ok = violations == 0
+    assert ok, f'{violations} segment(s) have conversions > sessions'
+    return ok
